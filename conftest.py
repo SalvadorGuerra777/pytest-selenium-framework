@@ -10,8 +10,7 @@ from pages.login_page import LoginPage
 SCREENSHOTS = Path("reports/screenshots")
 
 
-@pytest.fixture
-def driver():
+def chrome():
     options = webdriver.ChromeOptions()
     if config.HEADLESS:
         options.add_argument("--headless=new")
@@ -22,7 +21,26 @@ def driver():
         "profile.password_manager_enabled": False,
         "profile.password_manager_leak_detection": False,
     })
-    browser = webdriver.Chrome(options=options)
+    return webdriver.Chrome(options=options)
+
+
+def firefox():
+    options = webdriver.FirefoxOptions()
+    if config.HEADLESS:
+        options.add_argument("-headless")
+    browser = webdriver.Firefox(options=options)
+    browser.set_window_size(1366, 768)
+    return browser
+
+
+BROWSERS = {"chrome": chrome, "firefox": firefox}
+
+
+@pytest.fixture
+def driver():
+    if config.BROWSER not in BROWSERS:
+        raise pytest.UsageError(f"BROWSER must be one of {sorted(BROWSERS)}, got {config.BROWSER!r}")
+    browser = BROWSERS[config.BROWSER]()
     yield browser
     browser.quit()
 
@@ -31,7 +49,7 @@ def driver():
 def inventory(driver):
     login = LoginPage(driver)
     login.open()
-    return login.login("standard_user", config.PASSWORD)
+    return login.login("standard_user", config.PASSWORD).wait_until_loaded()
 
 
 @pytest.fixture

@@ -13,6 +13,11 @@ class InventoryPage(BasePage):
     CART_BADGE = (By.CSS_SELECTOR, "[data-test='shopping-cart-badge']")
     CART_LINK = (By.CSS_SELECTOR, "[data-test='shopping-cart-link']")
 
+    def wait_until_loaded(self):
+        # find_all doesn't wait, so wait for the first product before reading the list
+        self.find(self.ITEM_NAMES)
+        return self
+
     def title(self):
         return self.text_of(self.TITLE)
 

@@ -8,7 +8,7 @@ UI test automation framework for [SauceDemo](https://www.saucedemo.com), a publi
 
 - Python 3.12+
 - PyTest, pytest-html (reports), pytest-xdist (parallel runs)
-- Selenium WebDriver 4 (Chrome, driver resolved by Selenium Manager)
+- Selenium WebDriver 4 (Chrome and Firefox, drivers resolved by Selenium Manager)
 - GitHub Actions
 
 ## Project structure
@@ -38,13 +38,14 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Google Chrome must be installed.
+Google Chrome or Mozilla Firefox must be installed.
 
 ## Configuration
 
 | Variable | Default | Description |
 |---|---|---|
 | `BASE_URL` | `https://www.saucedemo.com` | Application under test |
+| `BROWSER` | `chrome` | `chrome` or `firefox` |
 | `HEADLESS` | `true` | Set to `false` to watch the browser |
 | `TIMEOUT` | `10` | Explicit wait timeout in seconds |
 | `SAUCE_PASSWORD` | `secret_sauce` | Password for the demo users (published on the SauceDemo login page) |
@@ -71,11 +72,12 @@ An HTML report is written to `reports/report.html`. When a test fails, a screens
 | Cart | Empty cart on login, cart badge and contents after adding items, removing an item |
 | Checkout | Full purchase, item total and tax add up to the total, each required customer field is validated |
 
-Last local run: `20 passed` with `pytest -n 4` in about 2 minutes (Windows, Chrome, headless).
+Last local run: `20 passed` on Chrome and on Firefox with `pytest -n 4` (Windows, headless). CI runs the suite once per browser.
 
 ## Design decisions
 
 - Locators use the `data-test` attributes the app provides, which are more stable than CSS classes or text.
 - Every interaction goes through explicit waits in `BasePage`; there are no fixed sleeps.
 - Each test gets a fresh browser, so tests are independent and can run in parallel.
+- Running on Firefox found a timing bug that Chrome hid: the inventory test sometimes counted 0 products because `find_all` read the list before it rendered. The `inventory` fixture now waits for the first product before returning the page. `find_all` itself doesn't wait, because an empty result is valid in some places (no cart badge).
 - Negative and boundary cases are parametrized to keep one test function per rule.
