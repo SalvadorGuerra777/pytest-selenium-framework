@@ -1,0 +1,46 @@
+# Same suite as .github/workflows/ui-tests.yml, on Azure Pipelines.
+# Microsoft-hosted Ubuntu agents ship Chrome and Firefox; Selenium Manager gets the drivers.
+trigger:
+  branches:
+    include: [main]
+
+pr:
+  branches:
+    include: [main]
+
+pool:
+  vmImage: ubuntu-latest
+
+strategy:
+  matrix:
+    chrome:
+      BROWSER: chrome
+    firefox:
+      BROWSER: firefox
+
+variables:
+  HEADLESS: "true"
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.12"
+
+  - script: pip install -r requirements.txt
+    displayName: Install dependencies
+
+  - script: pytest -n 4 --junitxml=reports/junit.xml
+    displayName: Run tests ($(BROWSER))
+
+  # shows pass/fail per test in the run's Tests tab
+  - task: PublishTestResults@2
+    condition: always()
+    inputs:
+      testResultsFiles: reports/junit.xml
+      testRunTitle: UI tests ($(BROWSER))
+
+  - task: PublishPipelineArtifact@1
+    condition: always()
+    inputs:
+      targetPath: reports
+      artifact: test-report-$(BROWSER)
